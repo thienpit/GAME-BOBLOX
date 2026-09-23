@@ -1,0 +1,43 @@
+name: Deploy to Roblox Experience
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Publish Place to Roblox
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Place to Roblox Open Cloud
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+        run: |
+          UNIVERSE_ID="10767702058"
+          PLACE_ID="133713004710836"
+
+          echo "🚀 Starting automated deployment for Place ID: ${PLACE_ID} (Universe: ${UNIVERSE_ID})..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://apis.roblox.com/universes/v1/${UNIVERSE_ID}/places/${PLACE_ID}/versions?versionType=Published" \
+            -H "x-api-key: ${ROBLOX_API_KEY}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @StealAPetRock.rbxl)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status Code: ${HTTP_CODE}"
+          echo "Roblox Response: ${BODY}"
+
+          if [ "${HTTP_CODE}" -ne 200 ]; then
+            echo "❌ Deployment failed with status ${HTTP_CODE}!"
+            exit 1
+          fi
+
+          echo "✅ Successfully deployed place version to Roblox!"
