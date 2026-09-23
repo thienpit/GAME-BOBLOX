@@ -47,6 +47,7 @@ jobs:
           echo "- **Roblox Response:** \`${BODY}\`" >> $GITHUB_STEP_SUMMARY
 
           if [ "${HTTP_CODE}" -ne 200 ]; then
+            echo "::error title=Roblox API Error::HTTP ${HTTP_CODE} - ${BODY}"
             echo "❌ Deployment failed with status ${HTTP_CODE}!"
             exit 1
           fi
