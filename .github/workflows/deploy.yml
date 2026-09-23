@@ -23,6 +23,13 @@ jobs:
 
           echo "🚀 Starting automated deployment for Place ID: ${PLACE_ID} (Universe: ${UNIVERSE_ID})..."
           
+          if [ -z "${ROBLOX_API_KEY}" ]; then
+            echo "❌ ERROR: ROBLOX_API_KEY secret is empty or missing in GitHub Secrets!"
+            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Secret \`ROBLOX_API_KEY\` is empty or not set in Repository Settings -> Secrets." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://apis.roblox.com/universes/v1/${UNIVERSE_ID}/places/${PLACE_ID}/versions?versionType=Published" \
             -H "x-api-key: ${ROBLOX_API_KEY}" \
@@ -34,6 +41,10 @@ jobs:
 
           echo "HTTP Status Code: ${HTTP_CODE}"
           echo "Roblox Response: ${BODY}"
+
+          echo "### 📦 Roblox Deploy Result" >> $GITHUB_STEP_SUMMARY
+          echo "- **HTTP Code:** \`${HTTP_CODE}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Roblox Response:** \`${BODY}\`" >> $GITHUB_STEP_SUMMARY
 
           if [ "${HTTP_CODE}" -ne 200 ]; then
             echo "❌ Deployment failed with status ${HTTP_CODE}!"
