@@ -36,20 +36,24 @@ jobs:
             -H "Content-Type: application/octet-stream" \
             --data-binary @StealAPetRock.rbxl)
 
+          echo "$RESPONSE" > deploy_log.txt
+
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
 
           echo "HTTP Status Code: ${HTTP_CODE}"
           echo "Roblox Response: ${BODY}"
 
-          echo "### 📦 Roblox Deploy Result" >> $GITHUB_STEP_SUMMARY
-          echo "- **HTTP Code:** \`${HTTP_CODE}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Roblox Response:** \`${BODY}\`" >> $GITHUB_STEP_SUMMARY
-
           if [ "${HTTP_CODE}" -ne 200 ]; then
-            echo "::error title=Roblox API Error::HTTP ${HTTP_CODE} - ${BODY}"
             echo "❌ Deployment failed with status ${HTTP_CODE}!"
             exit 1
           fi
 
           echo "✅ Successfully deployed place version to Roblox!"
+
+      - name: Upload Deploy Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-log
+          path: deploy_log.txt
