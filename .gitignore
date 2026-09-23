@@ -1,0 +1,29 @@
+# Hệ điều hành & File rác
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor / IDE
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+
+# Rojo & Wally temporary files
+*.rbxmx.temp
+*.rbxmx.lock
+/Packages
+/ServerPackages
+.aftman/
+.foreman/
+
+# Python test caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Logs & temp
+*.log
+*.tmp
