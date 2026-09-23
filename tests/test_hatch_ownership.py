@@ -1,6 +1,11 @@
 """
+[SIMULATION ONLY — INVARIANT LOGIC CHECK]
 Simulation unit test for Phase P0-A: Hatch Claim Ownership & Security Invariants.
 Directly models the Luau ValidateHatchClaim and ClaimHatchedEgg functions from HatchService.luau.
+
+NOTE: This is a standalone Python logic test only.
+It does NOT execute Luau, Roblox engine C++ internals, RemoteEvents, or multi-client networking.
+Do NOT use as evidence of gameplay or multi-client verification.
 """
 import time
 import math
