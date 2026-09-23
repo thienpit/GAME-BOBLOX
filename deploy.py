@@ -13,6 +13,7 @@ print(f"API Key present: {bool(api_key)} (Length: {len(api_key)})")
 print(f"Place file exists: {os.path.exists(rbxl_path)} (Size: {os.path.getsize(rbxl_path) if os.path.exists(rbxl_path) else 0} bytes)")
 
 if not api_key:
+    print("::error title=Roblox Deploy Diagnostic::ROBLOX_API_KEY is empty or not set in GitHub Secrets")
     print("❌ ERROR: ROBLOX_API_KEY is empty!")
     sys.exit(1)
 
@@ -41,9 +42,13 @@ try:
         print(f"✅ Success! Status: {resp.status}")
         print(f"Roblox Response: {body}")
 except urllib.error.HTTPError as e:
-    err_body = e.read().decode('utf-8', errors='ignore')
+    err_body = e.read().decode('utf-8', errors='ignore').strip()
+    msg = f"HTTP {e.code}: {err_body}".replace("\r", "").replace("\n", " ").replace("%", "%25")
+    print(f"::error title=Roblox Deploy Diagnostic::{msg}")
     print(f"❌ Roblox HTTP Error {e.code}: {err_body}")
     sys.exit(1)
 except Exception as e:
+    msg = f"Unexpected: {str(e)}".replace("\r", "").replace("\n", " ")
+    print(f"::error title=Roblox Deploy Diagnostic::{msg}")
     print(f"❌ Unexpected Error: {e}")
     sys.exit(1)
