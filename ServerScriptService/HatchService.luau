@@ -37,6 +37,7 @@ export type IncubatingEggState = {
 
 -- [Model] -> IncubatingEggState
 local activeEggs: { [Model]: IncubatingEggState } = {}
+local MAX_HATCH_INTERACTION_DISTANCE: number = 24 -- Studs: max allowed interaction distance between HumanoidRootPart and EggCore
 
 -- Helper: Floating text above head
 local function ShowFloatingText(head: BasePart?, text: string, color: Color3)
@@ -347,13 +348,70 @@ local function SpawnRoamingPetInPen(base: Model, pet: any): Model?
 end
 _G.SpawnRoamingPetInPen = SpawnRoamingPetInPen
 
+-- VALIDATE HATCH CLAIM (SERVER-AUTHORITATIVE)
+local function ValidateHatchClaim(player: Player, eggModel: Model): (boolean, IncubatingEggState?)
+    if not player or not eggModel or not eggModel:IsA("Model") then
+        return false, nil
+    end
+
+    local state = activeEggs[eggModel]
+    if not state or state.IsClaiming then
+        return false, nil
+    end
+
+    -- 1. Owner identity check
+    if not state.Player or state.Player.UserId ~= player.UserId then
+        return false, nil
+    end
+
+    -- 2. Base ownership & hierarchy check
+    local base = GetPlayerBase(player)
+    if not base then
+        return false, nil
+    end
+
+    local ownerUserId = base:GetAttribute("OwnerUserId")
+    if ownerUserId ~= player.UserId then
+        return false, nil
+    end
+
+    local eggFolder = base:FindFirstChild("IncubatingEggs")
+    if not eggFolder or eggModel.Parent ~= eggFolder then
+        return false, nil
+    end
+
+    -- 3. Character presence and proximity check
+    local char = player.Character
+    if not char then
+        return false, nil
+    end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+    local eggCore = eggModel.PrimaryPart or (eggModel:FindFirstChild("EggCore") :: BasePart?)
+    if not hrp or not eggCore then
+        return false, nil
+    end
+
+    local distance = (hrp.Position - eggCore.Position).Magnitude
+    if distance > MAX_HATCH_INTERACTION_DISTANCE then
+        return false, nil
+    end
+
+    -- 4. Incubation timer completion check
+    if os.time() < state.FinishTime then
+        return false, nil
+    end
+
+    return true, state
+end
+
 -- CLAIM & HATCH EGG
 local function ClaimHatchedEgg(player: Player, eggModel: Model)
-    local state = activeEggs[eggModel]
-    if not state or state.IsClaiming then return end
-    
-    local now = os.time()
-    if now < state.FinishTime then return end
+    local isValid, state = ValidateHatchClaim(player, eggModel)
+    if not isValid or not state then
+        return
+    end
+
     state.IsClaiming = true
     
     local rollResult = RockPetConfig.RollPet(state.EggName)
@@ -580,10 +638,7 @@ local function PlaceEggInPen(player: Player, eggName: string, dropPos: Vector3?)
     prompt.Parent = core
     
     prompt.Triggered:Connect(function(triggerPlayer)
-        local ownerId = base:GetAttribute("OwnerUserId")
-        if triggerPlayer.UserId == ownerId then
-            ClaimHatchedEgg(triggerPlayer, eggModel)
-        end
+        ClaimHatchedEgg(triggerPlayer, eggModel)
     end)
     
     eggModel.Parent = eggFolder
