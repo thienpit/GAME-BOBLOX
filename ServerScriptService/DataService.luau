@@ -418,6 +418,21 @@ function DataService.UpgradeTreadmill(player: Player): number
     return profile.TreadmillLevel
 end
 
+function DataService.IsPurchaseGrantedInProfile(player: Player, purchaseId: string): boolean
+    local profile = loadedProfiles[player.UserId]
+    if not profile or not profile.ProcessedPurchases then return false end
+    return profile.ProcessedPurchases[purchaseId] == true
+end
+
+function DataService.RecordPurchaseInProfile(player: Player, purchaseId: string)
+    local profile = loadedProfiles[player.UserId]
+    if not profile then return end
+    if not profile.ProcessedPurchases then
+        profile.ProcessedPurchases = {}
+    end
+    profile.ProcessedPurchases[purchaseId] = true
+end
+
 function DataService.SaveAll
 (isServerShutdown: boolean)
     for _, player in ipairs(game:GetService("Players"):GetPlayers()) do

@@ -44,7 +44,8 @@ export type PlayerData = {
     QuestDayId: number,
     QuestProgress: { [string]: number },
     QuestClaimed: { [string]: boolean },
-    TutorialDone: boolean
+    TutorialDone: boolean,
+    ProcessedPurchases: { [string]: boolean }?
 }
 
 local PlayerDataTemplate = {}
@@ -77,7 +78,8 @@ PlayerDataTemplate.DEFAULT_DATA = {
         StealZoneEggs = false,
         BatHits = false
     },
-    TutorialDone = false
+    TutorialDone = false,
+    ProcessedPurchases = {}
 } :: PlayerData
 
 function PlayerDataTemplate.CreateNewProfile(): PlayerData

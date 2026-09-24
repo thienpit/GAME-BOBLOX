@@ -20,43 +20,77 @@ local DataService = require(script.Parent:WaitForChild("DataService"))
 local monetizationRemote = ReplicatedStorage:WaitForChild("MonetizationRemote") :: RemoteEvent
 
 -- =============================================================================
--- DATASTORE LƯU LỊCH SỬ GIAO DỊCH DEVELOPER PRODUCT (CHỐNG CẤP TRÙNG)
+-- DATASTORE LƯU LỊCH SỬ GIAO DỊCH DEVELOPER PRODUCT (CHỐNG CẤP TRÙNG & CRASH-SAFE)
 -- =============================================================================
-local mockPurchaseHistory: { [string]: boolean } = {}
+export type PurchaseReceiptRecord = {
+    PurchaseId: string,
+    PlayerId: number,
+    ProductId: number,
+    Status: "processing" | "granted",
+    CreatedAt: number,
+    GrantedAt: number?,
+}
+
+local mockPurchaseHistory: { [string]: any } = {}
 local realHistoryStore: any = nil
 
 local connectSuccess, connectResult = pcall(function()
-    return DataStoreService:GetDataStore("StealEgg_PurchaseHistory_v1.0")
+    return DataStoreService:GetDataStore(\"StealEgg_PurchaseHistory_v1.0\")
 end)
 
 if connectSuccess and connectResult then
     realHistoryStore = connectResult
 else
-    warn("[Marketplace] Cloud DataStore unavailable. Using RAM Mock History!")
+    warn(\"[Marketplace] Cloud DataStore unavailable. Using RAM Mock History!\")
 end
 
-local function IsPurchaseProcessed(purchaseId: string): boolean
+local function GetReceiptRecord(purchaseId: string): (boolean, any)
     if realHistoryStore then
         local success, result = pcall(function()
             return realHistoryStore:GetAsync(purchaseId)
         end)
-        if success and result == true then
-            return true
-        end
-        return false
+        return success, result
     else
-        return mockPurchaseHistory[purchaseId] == true
+        return true, mockPurchaseHistory[purchaseId]
     end
 end
 
-local function MarkPurchaseProcessed(purchaseId: string): boolean
+local function SetReceiptState(purchaseId: string, playerId: number, productId: number, status: \"processing\" | \"granted\"): boolean
     if realHistoryStore then
         local success, _ = pcall(function()
-            realHistoryStore:SetAsync(purchaseId, true)
+            return realHistoryStore:UpdateAsync(purchaseId, function(current: any)
+                if current == true or (typeof(current) == \"table\" and current.Status == \"granted\") then
+                    -- Đã hoàn thành vĩnh viễn, không bao giờ hạ cấp về processing
+                    return current
+                end
+                
+                local now = os.time()
+                local record: PurchaseReceiptRecord = {
+                    PurchaseId = purchaseId,
+                    PlayerId = playerId,
+                    ProductId = productId,
+                    Status = status,
+                    CreatedAt = if typeof(current) == \"table\" and current.CreatedAt then current.CreatedAt else now,
+                    GrantedAt = if status == \"granted\" then now else (if typeof(current) == \"table\" then current.GrantedAt else nil),
+                }
+                return record
+            end)
         end)
         return success
     else
-        mockPurchaseHistory[purchaseId] = true
+        local existing = mockPurchaseHistory[purchaseId]
+        if existing == true or (typeof(existing) == \"table\" and existing.Status == \"granted\") then
+            return true
+        end
+        local now = os.time()
+        mockPurchaseHistory[purchaseId] = {
+            PurchaseId = purchaseId,
+            PlayerId = playerId,
+            ProductId = productId,
+            Status = status,
+            CreatedAt = if typeof(existing) == \"table\" and existing.CreatedAt then existing.CreatedAt else now,
+            GrantedAt = if status == \"granted\" then now else nil,
+        }
         return true
     end
 end
@@ -74,57 +108,78 @@ MarketplaceService.ProcessReceipt = function(receiptInfo: {
 }): Enum.ProductPurchaseDecision
     local purchaseId = receiptInfo.PurchaseId
     
-    -- BƯỚC 1: KIỂM TRA CHỐNG CẤP TRÙNG
-    if IsPurchaseProcessed(purchaseId) then
-        print(string.format("[ProcessReceipt] Transaction %s already processed. Completed!", purchaseId))
-        return Enum.ProductPurchaseDecision.PurchaseGranted
+    -- BƯỚC 1: KIỂM TRA CHỐNG CẤP TRÙNG TỪ DATASTORE
+    local checkSuccess, record = GetReceiptRecord(purchaseId)
+    if checkSuccess and record then
+        if record == true or (typeof(record) == \"table\" and record.Status == \"granted\") then
+            print(string.format(\"[ProcessReceipt] Transaction %s already processed. Completed!\", purchaseId))
+            return Enum.ProductPurchaseDecision.PurchaseGranted
+        end
     end
     
     -- BƯỚC 2: TÌM NGƯỜI CHƠI TRONG SERVER
     local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
     if not player then
         -- Người chơi đã thoát game: Không cấp lúc này, yêu cầu Roblox gửi lại sau
-        warn(string.format("[ProcessReceipt] Player %d not in server. Postponing retry!", receiptInfo.PlayerId))
+        warn(string.format(\"[ProcessReceipt] Player %d not in server. Postponing retry!\", receiptInfo.PlayerId))
         return Enum.ProductPurchaseDecision.NotProcessedYet
     end
     
     local productConfig = MonetizationConfig.PRODUCTS[receiptInfo.ProductId]
     if not productConfig then
-        warn(string.format("[ProcessReceipt] ProductId %d not found in config!", receiptInfo.ProductId))
+        warn(string.format(\"[ProcessReceipt] ProductId %d not found in config!\", receiptInfo.ProductId))
         return Enum.ProductPurchaseDecision.NotProcessedYet
     end
     
-    -- BƯỚC 3: TRAO THƯỞNG CHO NGƯỜI CHƠI
-    local grantSuccess = false
-    if productConfig.RewardType == "Money" then
-        local addAmount = tonumber(productConfig.RewardValue) or 0
-        DataService.AddMoney(player, addAmount)
-        grantSuccess = true
-        print(string.format("[ProcessReceipt] Granted %d Cash to %s!", addAmount, player.Name))
-    elseif productConfig.RewardType == "Egg" then
-        local eggName = tostring(productConfig.RewardValue)
-        DataService.AddEgg(player, {
-            Id = HttpService:GenerateGUID(false),
-            EggType = eggName,
-            ZoneId = 4,
-            AcquiredAt = os.time()
-        })
-        grantSuccess = true
-        print(string.format("[ProcessReceipt] Granted egg '%s' to %s!", eggName, player.Name))
+    -- BƯỚC 3: ĐÁNH DẤU TRẠNG THÁI ĐANG XỬ LÝ (PROCESSING)
+    SetReceiptState(purchaseId, receiptInfo.PlayerId, receiptInfo.ProductId, \"processing\")
+    
+    -- BƯỚC 4: TRAO THƯỞNG CHO NGƯỜI CHƠI (KIỂM TRA CHỐNG CẤP TRÙNG TRONG PROFILE)
+    local alreadyInProfile = DataService.IsPurchaseGrantedInProfile(player, purchaseId)
+    if not alreadyInProfile then
+        local grantSuccess = false
+        if productConfig.RewardType == \"Money\" then
+            local addAmount = tonumber(productConfig.RewardValue) or 0
+            DataService.AddMoney(player, addAmount)
+            grantSuccess = true
+            print(string.format(\"[ProcessReceipt] Granted %d Cash to %s!\", addAmount, player.Name))
+        elseif productConfig.RewardType == \"Egg\" then
+            local eggName = tostring(productConfig.RewardValue)
+            DataService.AddEgg(player, {
+                Id = HttpService:GenerateGUID(false),
+                EggType = eggName,
+                ZoneId = 4,
+                AcquiredAt = os.time()
+            })
+            grantSuccess = true
+            print(string.format(\"[ProcessReceipt] Granted egg '%s' to %s!\", eggName, player.Name))
+        end
+        
+        if not grantSuccess then
+            return Enum.ProductPurchaseDecision.NotProcessedYet
+        end
+        
+        DataService.RecordPurchaseInProfile(player, purchaseId)
     end
     
-    if not grantSuccess then
+    -- BƯỚC 5: LƯU BỀN VỮNG PROFILE NGƯỜI CHƠI
+    local saveSuccess = DataService.SaveProfile(player, false)
+    if not saveSuccess then
+        warn(string.format(\"[ProcessReceipt] Failed to persist profile for %s on purchase %s. Postponing retry!\", player.Name, purchaseId))
         return Enum.ProductPurchaseDecision.NotProcessedYet
     end
     
-    -- BƯỚC 4: LƯU LỊCH SỬ GIAO DỊCH & LƯU DỮ LIỆU NGƯỜI CHƠI
-    MarkPurchaseProcessed(purchaseId)
-    DataService.SaveProfile(player, false)
+    -- BƯỚC 6: ĐÁNH DẤU GIAO DỊCH THÀNH CÔNG VĨNH VIỄN TRONG DATASTORE
+    local markSuccess = SetReceiptState(purchaseId, receiptInfo.PlayerId, receiptInfo.ProductId, \"granted\")
+    if not markSuccess then
+        warn(string.format(\"[ProcessReceipt] Failed to mark receipt %s as granted in DataStore. Postponing retry!\", purchaseId))
+        return Enum.ProductPurchaseDecision.NotProcessedYet
+    end
     
     -- Thông báo chúc mừng cho Client
-    monetizationRemote:FireClient(player, "PurchaseSuccess", "Product", productConfig.Name)
+    monetizationRemote:FireClient(player, \"PurchaseSuccess\", \"Product\", productConfig.Name)
     
-    -- BƯỚC 5: XÁC NHẬN ROBLOX ĐÃ GIAO DỊCH THÀNH CÔNG
+    -- BƯỚC 7: XÁC NHẬN ROBLOX ĐÃ GIAO DỊCH THÀNH CÔNG
     return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
