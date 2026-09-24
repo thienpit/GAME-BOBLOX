@@ -45,7 +45,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(125, 140, 75),
         HandleMaterial = Enum.Material.Wood,
         RequiredZone = 1,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Rừng Rêu (Mossy Forest)"
+        ZoneRewardText = "Collect all 3 pets from Mossy Forest"
     },
     ["baseball_bat"] = {
         Id = "baseball_bat",
@@ -59,7 +59,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(160, 80, 240),
         HandleMaterial = Enum.Material.Basalt,
         RequiredZone = 2,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Hang Hắc Diệu (Obsidian Cavern)"
+        ZoneRewardText = "Collect all 3 pets from Obsidian Cavern"
     },
     ["iron_bat"] = {
         Id = "iron_bat",
@@ -73,7 +73,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(255, 75, 20),
         HandleMaterial = Enum.Material.CrackedLava,
         RequiredZone = 3,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Lõi Dung Nham (Magma Core)"
+        ZoneRewardText = "Collect all 3 pets from Magma Core"
     },
     ["golden_bat"] = {
         Id = "golden_bat",
@@ -87,7 +87,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(255, 215, 30),
         HandleMaterial = Enum.Material.Neon,
         RequiredZone = 4,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Thiên Thạch (Celestial Meteor)"
+        ZoneRewardText = "Collect all 3 pets from Celestial Meteor"
     },
     ["cyber_bat"] = {
         Id = "cyber_bat",
@@ -101,7 +101,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(0, 255, 200),
         HandleMaterial = Enum.Material.Neon,
         RequiredZone = 5,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Không Gian Số (Cyber Matrix)"
+        ZoneRewardText = "Collect all 3 pets from Cyber Matrix"
     },
     ["divine_scepter"] = {
         Id = "divine_scepter",
@@ -115,7 +115,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(255, 240, 120),
         HandleMaterial = Enum.Material.Neon,
         RequiredZone = 6,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Đỉnh Cao Thần Thánh (Divine Olympus)"
+        ZoneRewardText = "Collect all 3 pets from Divine Olympus"
     },
     ["singularity_scythe"] = {
         Id = "singularity_scythe",
@@ -129,7 +129,7 @@ BatConfig.BATS = {
         HandleColor = Color3.fromRGB(255, 40, 160),
         HandleMaterial = Enum.Material.Neon,
         RequiredZone = 7,
-        ZoneRewardText = "Sưu tập đủ 3 Pet Vùng Dị Điểm Vô Tận (Eternal Singularity)"
+        ZoneRewardText = "Collect all 3 pets from Eternal Singularity"
     }
 } :: { [string]: BatInfo }
 

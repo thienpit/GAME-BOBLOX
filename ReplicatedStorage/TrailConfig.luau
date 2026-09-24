@@ -24,7 +24,7 @@ local TrailConfig = {}
 TrailConfig.TRAILS = {
     trail_dust = {
         Id = "trail_dust",
-        Name = "Bụi Tân Thủ 💨",
+        Name = "Rookie Dust 💨",
         UnlockPoints = 0,
         Multiplier = 1.0,
         Color = ColorSequence.new({
@@ -36,7 +36,7 @@ TrailConfig.TRAILS = {
     },
     trail_neon = {
         Id = "trail_neon",
-        Name = "Vệt Điện Xanh ⚡",
+        Name = "Blue Lightning Trail ⚡",
         UnlockPoints = 10000,
         Multiplier = 1.5,
         Color = ColorSequence.new({
@@ -48,7 +48,7 @@ TrailConfig.TRAILS = {
     },
     trail_fire = {
         Id = "trail_fire",
-        Name = "Ngọn Lửa Hỏa Ngục 🔥",
+        Name = "Inferno Flame Trail 🔥",
         UnlockPoints = 500000,
         Multiplier = 2.5,
         Color = ColorSequence.new({
@@ -60,7 +60,7 @@ TrailConfig.TRAILS = {
     },
     trail_void = {
         Id = "trail_void",
-        Name = "Bóng Tối Hư Không 🔮",
+        Name = "Void Shadow Trail 🔮",
         UnlockPoints = 25000000,
         Multiplier = 5.0,
         Color = ColorSequence.new({
@@ -72,7 +72,7 @@ TrailConfig.TRAILS = {
     },
     trail_star = {
         Id = "trail_star",
-        Name = "Bụi Sao Tinh Tú ⭐",
+        Name = "Stardust Trail ⭐",
         UnlockPoints = 1000000000,
         Multiplier = 12.0,
         Color = ColorSequence.new({
@@ -84,7 +84,7 @@ TrailConfig.TRAILS = {
     },
     trail_quantum = {
         Id = "trail_quantum",
-        Name = "Lượng Tử Cầu Vồng 🌈",
+        Name = "Quantum Rainbow Trail 🌈",
         UnlockPoints = 50000000000,
         Multiplier = 30.0,
         Color = ColorSequence.new({
